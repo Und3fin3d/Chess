@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+	</head>
+	<body>
+        Waiting...
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+		<script>
+		const socket = io();
+		socket.emit("log", { data: "connection" });
+		socket.on('redirect', (dest) => {
+			console.log(dest)
+			console.log(window.location)
+			window.location = dest;
+		});
+		</script>
+	</body>
+</html>
