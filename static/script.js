@@ -1,14 +1,18 @@
 const socketio = io();
-const sq = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'}
+const sq = {0: 'a', 1: 'b', 2: 'c', 3: 'd', 4: 'e', 5: 'f', 6: 'g', 7: 'h'};
 let drag;
 let beingDragged;
 let start;
-let overlay = document.createElement('div')
-document.body.appendChild(overlay);
+let shiftX;
+let shiftY;
+let lastX;
+let lastY;
+let over;
+let overlay = document.createElement('div');
+
 function init(pieces){
-  let center = document.createElement('center');
   let ChessBoard = document.createElement('div');
-  ChessBoard.setAttribute('class','chessboard')
+  ChessBoard.setAttribute('class','chessboard');
   if (pieces){
     for (let i = 0; i <8; i++)  {
       let tr = document.createElement('div');
@@ -47,8 +51,8 @@ function init(pieces){
       ChessBoard.appendChild(tr);
     }
   }
-  center.appendChild(ChessBoard);
-  document.body.appendChild(center);
+  document.body.appendChild(ChessBoard);
+  ChessBoard.appendChild(overlay);
 } 
 let legalmoves
 socketio.on('update',function(data){
@@ -57,10 +61,15 @@ socketio.on('update',function(data){
   let targets = document.querySelectorAll('.target')
   removehigh(targets,'target')
   let square = document.getElementById(data.square)
-  square.classList.add('target')
+  if (square != null){
+    square.classList.add('target')
+  }
   let check = document.querySelectorAll('.highlight3')
   removehigh(check,'highlight3')
-  document.getElementById(data.checks).classList.add('highlight3')
+  if (document.getElementById(data.checks) != null){
+    document.getElementById(data.checks).classList.add('highlight3')
+  }
+  
 
 })
 function POST(move){
@@ -80,6 +89,100 @@ function drawboard(board){
           beingDragged = e.target;
           start = e.target.parentNode.id
         });
+        img.addEventListener('touchstart', function(e) {
+          beingDragged = img;
+          start = e.target.parentNode.id;
+          img.style.zIndex = 1;
+          shiftX = e.touches[0].clientX-(img.width/2);
+          shiftY = e.touches[0].clientY - (img.height/2);//code for dragging the image in the later touchmove event
+          img.style.left = e.touches[0].clientX +"px";
+          img.style.top = e.touches[0].clientY +"px";
+        });
+        img.addEventListener("touchmove", function(e) {
+          e.preventDefault();
+          lastX =e.touches[0].clientX 
+          lastY = e.touches[0].clientY
+          img.style.left=lastX-shiftX+"px";
+          img.style.top=lastY-shiftY+"px";
+          let tar = document.elementsFromPoint(lastX,lastY)[1]
+          if (tar != document.getElementById(start)){
+            if(tar.tagName=="DIV" && !tar.hasChildNodes()){
+              if(over!=null){
+                over.classList.remove('highlight')
+                over.classList.remove('highlight2')
+              }
+              over = tar
+              over.classList.add('highlight')
+            }
+            else if(tar.tagName=="IMG" && isLowerCase(tar.id) != isLowerCase(img.id)){
+              if(over!=null){
+                over.classList.remove('highlight')
+                over.classList.remove('highlight2')
+              }
+              over = tar.parentNode
+              over.classList.add('highlight2')
+            }
+          }
+        });
+        img.addEventListener("touchend", function(e) {
+          e.preventDefault()
+          img.style.zIndex = "";
+          let sq = document.elementsFromPoint(lastX,lastY)[1]
+          if (sq.tagName=="IMG"){
+            sq = sq.parentNode
+          }
+          let move = start + sq.id
+          if (isLowerCase(img.id)==colour){
+            if (img.id.toLowerCase()=='k'){
+              if(start.substring(0,1)=='e'){
+                if(sq.id.substring(0,1)=='c'){
+                  move = 'O-O-O'
+                }
+                if(sq.id.substring(0,1)=='g'){
+                  move = 'O-O'
+                }
+              }
+            }
+            if (legalmoves.includes(move)){
+              if(sq.children.length != 0){
+                if (isLowerCase(sq.children[0].id) != isLowerCase(img.id)){
+                  sq.textContent = '';
+                  sq.append(img)
+                  img.style.left = "50%"
+                  img.style.top = "50%"
+                  POST(move)
+                  over.classList.remove('highlight')
+                  over.classList.remove('highlight2')
+                }
+              }
+              else{
+                sq.append(img)
+                img.style.left = "50%"
+                img.style.top = "50%"
+                POST(move)
+                over.classList.remove('highlight')
+                over.classList.remove('highlight2')
+              }
+            }
+            else if (legalmoves.includes(move+'P')){
+              sq.innerHTML = ''
+              over.classList.remove('highlight2')
+              for (let i = 7; i >4; i--) {
+                let s = document.getElementById(sq.id.substring(0,1)+i)
+                s.innerHTML = ''
+              }
+              overlay.classList.add('overlay');
+              fillProm(['Q','N','B','R'],move)
+              sq.appendChild(promotion);
+            }
+            else{
+                img.style.top = "50%"
+                img.style.left = "50%"
+                over.classList.remove('highlight')
+                over.classList.remove('highlight2')
+            }
+          }
+      });
         square.appendChild(img);
       }
     }
@@ -95,6 +198,7 @@ function removehigh(targets,clas){
 }
 init(colour)
 POST('initiation')
+
 let promotion
 promotion = document.createElement('div');
 promotion.setAttribute('class','promotion');
@@ -103,7 +207,7 @@ function fillProm(pieces,move){
   pieces.forEach(piece => {
     let x = document.createElement("INPUT");
     x.setAttribute("type", "image");
-    x.src = "../static/images/"+piece+".gif";
+    x.src = "../static/images/"+piece+".svg";
     x.addEventListener('click',function(e){
       POST(move+piece)
       overlay.classList.remove('overlay')
@@ -154,7 +258,7 @@ squares.forEach(square => {
           }
         }
         else if (legalmoves.includes(move+'P')){
-          square.innerHTML = ''
+          square.innerHTML = ''//mark for change
           square.classList.remove('highlight2')
           for (let i = 7; i >4; i--) {
             let s = document.getElementById(square.id.substring(0,1)+i)
@@ -181,7 +285,7 @@ squares.forEach(square => {
             if(e.target.parentNode.classList.contains('target')){
               e.target.parentNode.classList.remove('target')
               e.target.parentNode.classList.add('highlight2')
-              setTimeout(()=> e.target.parentNode.classList.add('target'),1000)
+              setTimeout(()=> e.target.parentNode.classList.add('target'),1000)//eeeee
             }
             else{
               e.target.parentNode.classList.add('highlight2')

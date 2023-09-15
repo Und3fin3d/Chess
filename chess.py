@@ -212,7 +212,7 @@ class board:
         if x - 2 >= 0 and y - 1 >= 0 and (self.grid[y - 1][x - 2].islower() != self.grid[y][x].islower() and self.grid[y - 1][x - 2] != '•' or self.grid[y - 1][x - 2] == '•'):
             legalmoves += str(squares2[x]) + str(y + 1) + str(
                 squares2[x - 2]) + str(y - 1 + 1) + ','
-        if x + 2 <= 7 and y + 1 <= 7 and (self.grid[y + 1][x + 1].islower() != self.grid[y][x].islower() and self.grid[y + 1][x + 2] != '•' or self.grid[y + 1][x + 2] == '•'):
+        if x + 2 <= 7 and y + 1 <= 7 and (self.grid[y + 1][x + 2].islower() != self.grid[y][x].islower() and self.grid[y + 1][x + 2] != '•' or self.grid[y + 1][x + 2] == '•'):
             legalmoves += str(squares2[x]) + str(y + 1) + str(squares2[x + 2]) + str(y + 1 + 1) + ','
         if x - 2 >= 0 and y + 1 <= 7 and (self.grid[y + 1][x - 2].islower() != self.grid[y][x].islower() and self.grid[y + 1][x - 2] != '•' or self.grid[y + 1][x - 2] == '•'):
             legalmoves += str(squares2[x]) + str(y + 1) + str(squares2[x - 2]) + str(y + 1 + 1) + ','
